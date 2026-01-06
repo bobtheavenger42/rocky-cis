@@ -27,7 +27,7 @@ data "sshkey" "packer" {}
 
 source "qemu" "vm" {
   accelerator      = var.qemu_accelerator
-  machine_type     = "q35"
+  machine_type     = "pc"
   display          = var.qemu_display
   cpus             = 4
   memory           = "4096"
@@ -36,11 +36,14 @@ source "qemu" "vm" {
   output_directory = "packer_output/"
   headless         = false
   # DVD image is required for `%addon org_fedora_oscap`
-  iso_url           = "https://download.rockylinux.org/pub/rocky/8/isos/x86_64/Rocky-8.9-x86_64-dvd1.iso"
-  iso_checksum      = "sha256:1abe38fd11279879e3e7658ef748c1ef06ee763351a53bb424020ec053c50d0b"
-  boot_command      = ["<up><tab> inst.ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/kickstart.cfg <enter><wait>"]
-  boot_key_interval = "2ms"
-  boot_wait         = "1s"
+  iso_url           = "/home/enzo/Downloads/Rocky-9-latest-x86_64-minimal.iso"
+  iso_checksum      = "sha256:23a1ac1175d8ccada7195863914ef1237f584ff25f73bd53da410d5fffd882b0"
+  boot_command      = [
+    "<up><wait>e<wait><down><down><end><wait> inst.ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/kickstart.cfg<f10>"
+  ]
+  boot_wait         = "30s"
+  http_port_min = 8855
+  http_port_max = 8855
   http_content = {
     "/kickstart.cfg" = templatefile("kickstart.cfg.pkrtpl.hcl", {
       "packer_user_name"  = local.packer_user_name

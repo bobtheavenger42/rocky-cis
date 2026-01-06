@@ -2,7 +2,7 @@
 
 # https://pykickstart.readthedocs.io/en/latest/kickstart-docs.html
 # https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/performing_an_advanced_rhel_installation/kickstart-commands-and-options-reference_installing-rhel-as-an-experienced-user#kickstart-commands-for-installation-program-configuration-and-flow-control_kickstart-commands-and-options-reference
-# ksvalidator -vRHEL8 kickstart.cfg
+# ksvalidator -vRHEL9 kickstart.cfg
 
 cmdline
 cdrom
@@ -23,12 +23,13 @@ skipx
 firewall --enabled --ssh
 selinux --enforcing
 authselect select sssd
-network --activate --device=enp0s2 --noipv6 --hostname="${hostname}"
+network --bootproto=dhcp --device=enp0s2 --onboot=yes --noipv6 --hostname="${hostname}"
 
 zerombr
-clearpart --all --initlabel
-part /boot --fstype=xfs --size=512 --label=boot
-part pv.01 --grow --size=1
+clearpart --all --initlabel --drives=sda
+part /boot/efi --fstype="efi" --ondisk=sda --size=500 --asprimary
+part /boot --fstype="xfs" --ondisk=sda --size=1024 --asprimary
+part pv.01 --fstype="lvmpv" --ondisk=sda --size=1 --grow
 volgroup vg.01 --pesize=4096 pv.01
 logvol / --fstype=xfs --name=root --vgname=vg.01 --size=10240 --grow
 logvol /home --fstype=xfs --name=home --vgname=vg.01 --size=1024 --fsoptions="nodev"
@@ -39,14 +40,14 @@ logvol /var/log --fstype=xfs --name=var_log --vgname=vg.01 --size=1024
 logvol /var/log/audit --fstype=xfs --name=var_log_audit --vgname=vg.01 --size=512
 logvol swap --name=swap --vgname=vg.01 --size=1024
 
-bootloader --location=mbr --timeout=3 --password "${admin_user_pwd}"
+bootloader --location=none --efi
 
 %addon com_redhat_kdump --disable
 %end
 
 %addon org_fedora_oscap
 content-type = scap-security-guide
-# https://static.open-scap.org/ssg-guides/ssg-rhel8-guide-cis_server_l1.html
+# https://static.open-scap.org/ssg-guides/ssg-rhel9-guide-cis_server_l1.html
 profile = xccdf_org.ssgproject.content_profile_cis_server_l1
 %end
 
@@ -90,6 +91,6 @@ firewall-offline-cmd --zone=drop --add-service=ssh
 firewall-offline-cmd --set-default-zone=drop
 
 echo "Generating CIS report"
-oscap xccdf eval --fetch-remote-resources --profile xccdf_org.ssgproject.content_profile_cis_server_l1 --report post_install_eval.html /usr/share/xml/scap/ssg/content/ssg-rl8-ds.xml
+oscap xccdf eval --fetch-remote-resources --profile xccdf_org.ssgproject.content_profile_cis_server_l1 --report post_install_eval.html /usr/share/xml/scap/ssg/content/ssg-rl9-ds.xml
 
 %end
